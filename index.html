@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="id">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; padding: 0; margin: 0; display: flex; overflow: hidden; }
+        #app-wrapper { display: flex; width: 100%; height: 100%; }
+        #map { flex: 1; height: 100%; min-width: 0; }
+        #population-panel { position: absolute; bottom: 30px; left: 350px; width: 260px; background: white; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); font-family: 'Poppins', sans-serif; overflow: hidden; z-index: 999; border: 1px solid #e3ead8 }
+        .pop-header { background: #aed277; color: #3e4f24; padding: 10px 14px; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; }
+        .pop-body { padding: 14px; }
+        .pop-title { font-size: 12px; color: #64748b; }
+        .pop-value { font-size: 26px; font-weight: 800; margin: 6px 0; color: #6b8a3e; }
+        .pop-kec { font-size: 12px; color: #475569; font-weight: 600; margin-bottom: 6px; }
+        .pop-source { font-size: 10px; color: #94a3b8; }
+        #dashboard-panel { width: 320px; min-width: 320px; max-width: 320px; height: 100vh; overflow-y: auto; background: #ffffff; border-right: 1px solid #dcfce7; box-shadow: 10px 0 30px rgba(20, 83, 45, 0.05); color: #2d3e33; z-index: 1000; font-family: 'Poppins', sans-serif; flex-shrink: 0; }
+        #dashboard-panel::-webkit-scrollbar { width: 5px; }
+        #dashboard-panel::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        #dashboard-panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .panel-header { padding: 16px 18px 12px; border-bottom: 1px solid #eef2f6; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #ffffffcc; position: sticky; top: 0; z-index: 10; }
+        .panel-header-left { display: flex; align-items: center; gap: 12px; }
+        .panel-icon { font-size: 22px; background: #f1f5e8; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border-radius: 20px; color: #5f8670; }
+        .panel-header h3 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.2px; color: #0F172A; }
+        .panel-header .subtitle { font-size: 11px; color: #54708f; margin-top: 2px; font-weight: 500; }
+        .reset-btn { background: #ffffff; border: 1px solid #d1dbca; color: #3e4f24; border-radius: 40px; padding: 6px 14px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; box-shadow: 0 1px 1px rgba(0,0,0,0.02); }
+        .reset-btn:hover { background: #f1f5e8; border-color: #c0d89d; color: #466352; }
+        #active-filter-bar { margin: 12px 16px 0; padding: 8px 14px; background: #f1f5e8; border-left: 4px solid #5f8670; border-radius: 15px; font-size: 11px; color: #3e594a; display: none; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 500; }
+        #active-filter-bar.visible { display: flex; }
+        .section-title { padding: 14px 18px 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #3e4f24;; background: transparent; }
+        #donut-container { padding: 4px 16px 12px; display: flex; align-items: center; gap: 20px; background: #ffffffaa; }
+        #donut-svg { flex-shrink: 0; cursor: pointer; overflow: visible; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05)); }
+        .donut-legend { flex: 1; min-width: 0; }
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer; border-radius: 14px; padding: 6px 10px; transition: all 0.2s; user-select: none; background: #ffffff90; border: 1px solid transparent; }
+        .legend-item:hover { background: #f1f5e8; border-color: #86a789; transform: translateX(2px); }
+        .legend-item.active { background: #f1f5e8; border-color: #86a789; box-shadow: 0 1px 4px rgba(95, 134, 112, 0.15); }
+        .legend-item.dimmed { opacity: 0.45; background: #f8fafc; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 20px; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .legend-label { font-size: 12px; font-weight: 500; color: #1e293b; flex: 1; }
+        .legend-count { font-size: 12px; font-weight: 700; color: #5f8670; min-width: 32px; text-align: right; background: #f1f5e8; padding: 2px 8px; border-radius: 30px; }
+        #kec-table-wrap { padding: 0 14px 18px; }
+        #kec-table { width: 100%; border-collapse: collapse; font-size: 12px; border-radius: 18px; overflow: hidden; }
+        #kec-table thead tr { background: #aed277; border-bottom: 2px solid #e3ead8; }
+        #kec-table th { padding: 10px 10px; text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.3px; color: #3e4f24; border-bottom: 1px solid #fee2d6; }
+        #kec-table th.sortable { cursor: pointer; user-select: none; transition: color 0.1s; }
+        #kec-table th.sortable:hover { color: #5f8670; background: #f8faf5; }
+        #kec-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: all 0.15s; cursor: pointer; }
+        #kec-table tbody tr:hover { background: #f1f5e8; transform: scale(1.002); }
+        #kec-table tbody tr.selected { background: #f1f5e8; border-left: 3px solid #5f8670; }
+        #kec-table tbody tr.dimmed { opacity: 0.5; background: #f8fafc; }
+        #kec-table td { padding: 9px 10px; color: #334155; font-weight: 500; }
+        .count-badge { display: inline-block; background: #f1f5e8; color: #5f8670; border: 1px solid #d1dbca; border-radius: 30px; padding: 2px 12px; font-weight: 700; font-size: 12px; min-width: 34px; text-align: center; }
+        #kec-table tbody tr.selected .count-badge { background: #aed277; color: #3e4f24; box-shadow: none; }
+        </style>
+        <title>Peta Sebaran Menara Telekomunikasi di Kota Pekanbaru</title>
+    </head>
+    <body>
+        <div id="app-wrapper">
+            <div id="dashboard-panel">
+                <div class="panel-header">
+                    <div class="panel-header-left">
+                        <span class="panel-icon">📡</span>
+                        <div>
+                            <h3>Sebaran Menara Telekomunikasi</h3>
+                            <div class="subtitle">Kota Pekanbaru • 2026</div>
+                        </div>
+                    </div>
+                    <button class="reset-btn" onclick="resetAllFilters()">↺ Reset Filter</button>
+                </div>
+                <div id="active-filter-bar"><span id="active-filter-text"></span></div>
+                <div class="section-title">Distribusi Teknologi</div>
+                <div id="donut-container">
+                    <svg id="donut-svg" width="100" height="100" viewBox="0 0 100 100"></svg>
+                    <div class="donut-legend" id="donut-legend"></div>
+                </div>
+                <div class="section-title">Jumlah Menara per Kecamatan</div>
+                <div id="kec-table-wrap">
+                    <table id="kec-table">
+                        <thead><tr><th>Kecamatan</th><th class="sortable" id="sort-th" onclick="toggleSort()">Jumlah ▾</th></tr></thead>
+                        <tbody id="kec-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="map"></div>
+            <div id="population-panel">
+                <div class="pop-header">Statistik Wilayah & Penduduk</div>
+                <div class="pop-body">
+                    <div class="pop-title">Total Penduduk Kecamatan</div>
+                    <div class="pop-value" id="pop-value">-</div>
+                    <div class="pop-kec" id="pop-kec">Klik kecamatan</div>
+                    <div class="pop-source">*Sumber Data: BPS Pekanbaru</div>
+                </div>
+            </div>
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="data/ADMINISTRASI_AR_KECAMATAN_1.js"></script>
+        <script src="data/JUMLAH_MENARA_2.js"></script>
+        <script src="data/Menara_buffer_Telekomunikasi_PKU_3.js"></script>
+        <script src="data/Menara_Telekomunikasi_PKU_4.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({ color: 'rgba(255, 255, 0, 1.00)' });
+            } else {
+              highlightLayer.setStyle({ fillColor: 'rgba(255, 255, 0, 1.00)', fillOpacity: 1 });
+            }
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[0.4425084244054537,101.27885770039768],[0.6543806024479585,101.68054710279566]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        function removeEmptyRowsFromPopupContent(content, feature) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var rows = tempDiv.querySelectorAll('tr');
+            for (var i = 0; i < rows.length; i++) {
+                var td = rows[i].querySelector('td.visible-with-data');
+                var key = td ? td.id : '';
+                if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                    rows[i].parentNode.removeChild(rows[i]);
+                }
+            }
+            return tempDiv.innerHTML;
+        }
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() { popup.update(); }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true; audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() { popup.setContent(tempDiv.innerHTML); popup.update(); }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true; video.src = src;
+                    video.style.width = "400px"; video.style.height = "300px";
+                    video.style.maxHeight = "60vh"; video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    video.addEventListener('loadedmetadata', function() { popup.update(); });
+                    setTimeout(function() { popup.setContent(tempDiv.innerHTML); popup.update(); }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({ position: 'topleft' }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters', secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters', secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {}
+        map.createPane('pane_GoogleHybrid_0');
+        map.getPane('pane_GoogleHybrid_0').style.zIndex = 400;
+        var layer_GoogleHybrid_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleHybrid_0', opacity: 1.0, attribution: '',
+            minZoom: 1, maxZoom: 28, minNativeZoom: 0, maxNativeZoom: 18
+        });
+        map.addLayer(layer_GoogleHybrid_0);
+
+        function pop_ADMINISTRASI_AR_KECAMATAN_1(feature, layer) {
+            layer.on('click', function(e) {
+                var props = feature.properties;
+                var namaKec = props['WADMKC'] || 'Tidak diketahui';
+                var raw = props['Jumlah Penduduk PKU_Jumlah Penduduk (Jiwa)'];
+                var jumlah = (raw !== null && raw !== undefined && raw !== '') ? Number(raw) : null;
+                document.getElementById('pop-value').textContent = (jumlah !== null && !isNaN(jumlah))
+                    ? jumlah.toLocaleString('id-ID') + ' Jiwa' : 'N/A';
+                document.getElementById('pop-kec').textContent = '(Kec. ' + namaKec + ')';
+            });
+        }
+        function style_ADMINISTRASI_AR_KECAMATAN_1_0() {
+            return { pane: 'pane_ADMINISTRASI_AR_KECAMATAN_1', opacity: 1, color: 'rgba(255,255,255,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 4.0, fill: true, fillOpacity: 1, fillColor: 'rgba(136,119,205,0.0)', interactive: false }
+        }
+        map.createPane('pane_ADMINISTRASI_AR_KECAMATAN_1');
+        map.getPane('pane_ADMINISTRASI_AR_KECAMATAN_1').style.zIndex = 401;
+        map.getPane('pane_ADMINISTRASI_AR_KECAMATAN_1').style['mix-blend-mode'] = 'normal';
+        var layer_ADMINISTRASI_AR_KECAMATAN_1 = new L.geoJson(json_ADMINISTRASI_AR_KECAMATAN_1, {
+            attribution: '', interactive: true,
+            dataVar: 'json_ADMINISTRASI_AR_KECAMATAN_1', layerName: 'layer_ADMINISTRASI_AR_KECAMATAN_1',
+            pane: 'pane_ADMINISTRASI_AR_KECAMATAN_1',
+            onEachFeature: pop_ADMINISTRASI_AR_KECAMATAN_1, style: style_ADMINISTRASI_AR_KECAMATAN_1_0,
+        });
+        bounds_group.addLayer(layer_ADMINISTRASI_AR_KECAMATAN_1);
+        map.addLayer(layer_ADMINISTRASI_AR_KECAMATAN_1);
+
+        function pop_JUMLAH_MENARA_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') layer.closePopup();
+                    else layer.eachLayer(function(feature){ feature.closePopup(); });
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="WADMKC" colspan="2"><strong>WADMKC</strong><br />' + (feature.properties['WADMKC'] !== null ? autolinker.link(String(feature.properties['WADMKC']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="Jumlah_Men" colspan="2"><strong>Jumlah_Menara</strong><br />' + (feature.properties['Jumlah_Men'] !== null ? autolinker.link(String(feature.properties['Jumlah_Men']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+            layer.on('popupopen', function(e) { addClassToPopupIfMedia(content, e.popup); });
+            layer.bindPopup(content, { maxHeight: 400 });
+        }
+        function style_JUMLAH_MENARA_2_0() {
+            return { pane: 'pane_JUMLAH_MENARA_2', opacity: 1, color: 'rgba(35,35,35,1.0)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1.0, fill: true, fillOpacity: 1, fillColor: 'rgba(255,158,23,0.0)', interactive: true }
+        }
+        map.createPane('pane_JUMLAH_MENARA_2');
+        map.getPane('pane_JUMLAH_MENARA_2').style.zIndex = 402;
+        map.getPane('pane_JUMLAH_MENARA_2').style['mix-blend-mode'] = 'normal';
+        var layer_JUMLAH_MENARA_2 = new L.geoJson(json_JUMLAH_MENARA_2, {
+            attribution: '', interactive: true,
+            dataVar: 'json_JUMLAH_MENARA_2', layerName: 'layer_JUMLAH_MENARA_2',
+            pane: 'pane_JUMLAH_MENARA_2',
+            onEachFeature: pop_JUMLAH_MENARA_2, style: style_JUMLAH_MENARA_2_0,
+        });
+        bounds_group.addLayer(layer_JUMLAH_MENARA_2);
+        map.addLayer(layer_JUMLAH_MENARA_2);
+
+        /* LAYER 3: MENARA BUFFER — Tower Owner DIHAPUS dari popup */
+        function pop_Menara_buffer_Telekomunikasi_PKU_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') layer.closePopup();
+                    else layer.eachLayer(function(feature){ feature.closePopup(); });
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr><td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['VENDOR'] !== null ? autolinker.link(String(feature.properties['VENDOR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['Site ID'] !== null ? autolinker.link(String(feature.properties['Site ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['Site_Name'] !== null ? autolinker.link(String(feature.properties['Site_Name']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['NE'] !== null ? autolinker.link(String(feature.properties['NE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['TECH'] !== null ? autolinker.link(String(feature.properties['TECH']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['System'] !== null ? autolinker.link(String(feature.properties['System']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['DESA'] !== null ? autolinker.link(String(feature.properties['DESA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['KECAMATAN'] !== null ? autolinker.link(String(feature.properties['KECAMATAN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['KABUPATEN/'] !== null ? autolinker.link(String(feature.properties['KABUPATEN/']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['PROVINSI'] !== null ? autolinker.link(String(feature.properties['PROVINSI']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['CLUSTER'] !== null ? autolinker.link(String(feature.properties['CLUSTER']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['BRANCH'] !== null ? autolinker.link(String(feature.properties['BRANCH']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['NOP Area'] !== null ? autolinker.link(String(feature.properties['NOP Area']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['Zone'] !== null ? autolinker.link(String(feature.properties['Zone']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                    <tr><td colspan="2">' + (feature.properties['TP'] !== null ? autolinker.link(String(feature.properties['TP']).replace(/'/g, '\'').toLocaleString()) : '') + '</td></tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+            layer.on('popupopen', function(e) { addClassToPopupIfMedia(content, e.popup); });
+            layer.bindPopup(content, { maxHeight: 400 });
+        }
+        function style_Menara_buffer_Telekomunikasi_PKU_3_0() {
+            return { pane: 'pane_Menara_buffer_Telekomunikasi_PKU_3', opacity: 1, color: 'rgba(35,35,35,0.4)', dashArray: '', lineCap: 'butt', lineJoin: 'miter', weight: 1.0, fill: true, fillOpacity: 1, fillColor: 'rgba(255,255,255,0.4)', interactive: false }
+        }
+        map.createPane('pane_Menara_buffer_Telekomunikasi_PKU_3');
+        map.getPane('pane_Menara_buffer_Telekomunikasi_PKU_3').style.zIndex = 403;
+        map.getPane('pane_Menara_buffer_Telekomunikasi_PKU_3').style['mix-blend-mode'] = 'normal';
+        var layer_Menara_buffer_Telekomunikasi_PKU_3 = new L.geoJson(json_Menara_buffer_Telekomunikasi_PKU_3, {
+            attribution: '', interactive: false,
+            dataVar: 'json_Menara_buffer_Telekomunikasi_PKU_3', layerName: 'layer_Menara_buffer_Telekomunikasi_PKU_3',
+            pane: 'pane_Menara_buffer_Telekomunikasi_PKU_3',
+            onEachFeature: pop_Menara_buffer_Telekomunikasi_PKU_3, style: style_Menara_buffer_Telekomunikasi_PKU_3_0,
+        });
+        bounds_group.addLayer(layer_Menara_buffer_Telekomunikasi_PKU_3);
+        map.addLayer(layer_Menara_buffer_Telekomunikasi_PKU_3);
+
+        /* LAYER 4: MENARA TITIK — Tower Owner DIHAPUS dari popup */
+        function pop_Menara_Telekomunikasi_PKU_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') e.target._eventParents[i].resetStyle(e.target);
+                    }
+                    if (typeof layer.closePopup == 'function') layer.closePopup();
+                    else layer.eachLayer(function(feature){ feature.closePopup(); });
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td class="visible-with-data" id="DESA" colspan="2"><strong>DESA</strong><br />' + (feature.properties['DESA'] !== null ? autolinker.link(String(feature.properties['DESA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="KECAMATAN" colspan="2"><strong>KECAMATAN</strong><br />' + (feature.properties['KECAMATAN'] !== null ? autolinker.link(String(feature.properties['KECAMATAN']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td class="visible-with-data" id="KABUPATEN/" colspan="2"><strong>KABUPATEN/KOTA</strong><br />' + (feature.properties['KABUPATEN/'] !== null ? autolinker.link(String(feature.properties['KABUPATEN/']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+            layer.on('popupopen', function(e) { addClassToPopupIfMedia(content, e.popup); });
+            layer.bindPopup(content, { maxHeight: 400 });
+        }
+        function style_Menara_Telekomunikasi_PKU_4_0() {
+            return {
+                pane: 'pane_Menara_Telekomunikasi_PKU_4',
+                rotationAngle: 0.0,
+                rotationOrigin: 'center center',
+                icon: L.icon({ iconUrl: 'markers/Menara_Telekomunikasi_PKU_4.svg', iconSize: [38.0, 38.0] }),
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Menara_Telekomunikasi_PKU_4');
+        map.getPane('pane_Menara_Telekomunikasi_PKU_4').style.zIndex = 404;
+        map.getPane('pane_Menara_Telekomunikasi_PKU_4').style['mix-blend-mode'] = 'normal';
+        var layer_Menara_Telekomunikasi_PKU_4 = new L.geoJson(json_Menara_Telekomunikasi_PKU_4, {
+            attribution: '', interactive: true,
+            dataVar: 'json_Menara_Telekomunikasi_PKU_4', layerName: 'layer_Menara_Telekomunikasi_PKU_4',
+            pane: 'pane_Menara_Telekomunikasi_PKU_4',
+            onEachFeature: pop_Menara_Telekomunikasi_PKU_4,
+            pointToLayer: function (feature, latlng) {
+                return L.marker(latlng, style_Menara_Telekomunikasi_PKU_4_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Menara_Telekomunikasi_PKU_4);
+        map.addLayer(layer_Menara_Telekomunikasi_PKU_4);
+
+        const url = { "Nominatim OSM": "https://nominatim.openstreetmap.org/search?format=geojson&addressdetails=1&" };
+        var photonControl = L.control.photon({
+            url: url["Nominatim OSM"], feedbackLabel: '',
+            position: 'topleft', includePosition: true, initial: true,
+        }).addTo(map);
+        photonControl._container.childNodes[0].style.borderRadius = "10px";
+        var x = null, marker = null, z = null;
+        photonControl.on('selected', function(e) {
+            if (x != null) { map.removeLayer(obj3.marker); map.removeLayer(x); }
+            obj2.gcd = e.choice;
+            x = L.geoJSON(obj2.gcd).addTo(map);
+            var label = typeof obj2.gcd.properties.label === 'undefined' ? obj2.gcd.properties.display_name : obj2.gcd.properties.label;
+            obj3.marker = L.marker(x.getLayers()[0].getLatLng()).bindPopup(label).addTo(map);
+            map.setView(x.getLayers()[0].getLatLng(), 17);
+            z = typeof e.choice.properties.label === 'undefined' ? e.choice.properties.display_name : e.choice.properties.label;
+            e.target.input.value = z;
+        });
+        var search = document.getElementsByClassName("leaflet-photon leaflet-control")[0];
+        search.classList.add("leaflet-control-search");
+        search.style.display = "flex";
+        search.style.backgroundColor = "rgba(255,255,255,0.5)";
+        var button = document.createElement("div");
+        button.id = "gcd-button-control";
+        button.className = "gcd-gl-btn fa fa-search search-button";
+        search.insertBefore(button, search.firstChild);
+        last = search.lastChild;
+        last.style.display = "none";
+        button.addEventListener("click", function(e) {
+            last.style.display = (last.style.display === "none") ? "block" : "none";
+        });
+
+        var overlaysTree = [
+            {label: '<img src="legend/Menara_Telekomunikasi_PKU_4.png" /> Menara_Telekomunikasi_PKU', layer: layer_Menara_Telekomunikasi_PKU_4},
+            {label: '<img src="legend/Menara_buffer_Telekomunikasi_PKU_3.png" /> Menara_buffer_Telekomunikasi_PKU', layer: layer_Menara_buffer_Telekomunikasi_PKU_3},
+            {label: '<img src="legend/JUMLAH_MENARA_2.png" /> JUMLAH_MENARA', layer: layer_JUMLAH_MENARA_2},
+            {label: '<img src="legend/ADMINISTRASI_AR_KECAMATAN_1.png" /> ADMINISTRASI_AR_KECAMATAN', layer: layer_ADMINISTRASI_AR_KECAMATAN_1},
+            {label: "Google Hybrid", layer: layer_GoogleHybrid_0, radioGroup: 'bm'},
+        ];
+        var lay = L.control.layers.tree(null, overlaysTree, { collapsed: true });
+        lay.addTo(map);
+        setBounds();
+
+        var i = 0;
+        layer_ADMINISTRASI_AR_KECAMATAN_1.eachLayer(function(layer) {
+            layer.bindTooltip(
+                (layer.feature.properties['WADMKC'] !== null
+                    ? String('<div style="color: #323232; font-size: 10pt; font-family: \'Poppins\', sans-serif;">' + layer.feature.properties['WADMKC']) + '</div>'
+                    : ''),
+                {permanent: true, offset: [-0, -16], className: 'css_ADMINISTRASI_AR_KECAMATAN_1'}
+            );
+            labels.push(layer);
+            totalMarkers += 1;
+            layer.added = true;
+            addLabel(layer, i);
+            i++;
+        });
+        resetLabels([layer_ADMINISTRASI_AR_KECAMATAN_1]);
+        map.on("zoomend", function(){ resetLabels([layer_ADMINISTRASI_AR_KECAMATAN_1]); });
+        map.on("layeradd", function(){ resetLabels([layer_ADMINISTRASI_AR_KECAMATAN_1]); });
+        map.on("layerremove", function(){ resetLabels([layer_ADMINISTRASI_AR_KECAMATAN_1]); });
+
+        var activeKecamatan = null;
+        var activeTech = null;
+
+        function getTechCategory(props) {
+            var tech = props['TECH'] ? String(props['TECH']).toUpperCase() : '';
+            var system = props['System'] ? String(props['System']).toUpperCase() : '';
+            var ne = props['NE'] ? String(props['NE']).toUpperCase() : '';
+            var all = tech + ' ' + system + ' ' + ne;
+            var has5G = all.indexOf('5G') !== -1;
+            var has4G = all.indexOf('4G') !== -1 || all.indexOf('LTE') !== -1;
+            if (has5G && has4G) return '4G & 5G';
+            if (has5G) return '5G saja';
+            if (has4G) return '4G saja';
+            return 'Lainnya';
+        }
+        var techColors = { '5G saja': '#3b82f6', '4G & 5G': '#6b8a3e', '4G saja': '#aed277', 'Lainnya': '#94a3b8' };
+        function matchKec(props) { if (!activeKecamatan) return true; var kec = props['KECAMATAN'] ? String(props['KECAMATAN']).trim().toUpperCase() : ''; return kec === activeKecamatan.toUpperCase(); }
+        function matchTech(props) { if (!activeTech) return true; return getTechCategory(props) === activeTech; }
+        function buildKecData() { var rows = []; layer_JUMLAH_MENARA_2.eachLayer(function(lyr) { var p = lyr.feature.properties; var nama = p['WADMKC'] ? String(p['WADMKC']).trim() : null; var jumlah = p['Jumlah_Men'] !== null && p['Jumlah_Men'] !== undefined ? Number(p['Jumlah_Men']) : 0; if (nama && jumlah > 0) rows.push({ nama: nama, jumlah: jumlah }); }); return rows; }
+        function buildTechData() { var counts = {}; layer_Menara_Telekomunikasi_PKU_4.eachLayer(function(lyr) { var cat = getTechCategory(lyr.feature.properties); counts[cat] = (counts[cat] || 0) + 1; }); return counts; }
+        var kecSortDesc = true;
+        function renderKecTable() { var rows = buildKecData(); rows.sort((a,b) => kecSortDesc ? b.jumlah - a.jumlah : a.jumlah - b.jumlah); var tbody = document.getElementById('kec-tbody'); tbody.innerHTML = ''; rows.forEach(row => { var isSelected = activeKecamatan && activeKecamatan.toUpperCase() === row.nama.toUpperCase(); var isDimmed = activeKecamatan && !isSelected; var tr = document.createElement('tr'); if (isSelected) tr.classList.add('selected'); if (isDimmed) tr.classList.add('dimmed'); tr.innerHTML = `<td>${row.nama}</td><td><span class="count-badge">${row.jumlah}</span></td>`; tr.addEventListener('click', () => filterByKecamatan(row.nama)); tbody.appendChild(tr); }); }
+        function toggleSort() { kecSortDesc = !kecSortDesc; document.getElementById('sort-th').textContent = kecSortDesc ? 'Jumlah ▾' : 'Jumlah ▴'; renderKecTable(); }
+        function renderDonut() { var counts = buildTechData(); var svg = document.getElementById('donut-svg'); var legend = document.getElementById('donut-legend'); svg.innerHTML = legend.innerHTML = ''; var total = Object.values(counts).reduce((a,b)=>a+b,0); if (total === 0) return; var cx=50, cy=50, R=38, r=22; var startAngle = -Math.PI/2; var order = ['5G saja','4G & 5G','4G saja','Lainnya']; order.forEach(cat => { if (!counts[cat]) return; let angle = (counts[cat]/total)*2*Math.PI; let end = startAngle+angle; let large = angle > Math.PI ? 1 : 0; let x1=cx+R*Math.cos(startAngle), y1=cy+R*Math.sin(startAngle); let x2=cx+R*Math.cos(end), y2=cy+R*Math.sin(end); let xi1=cx+r*Math.cos(end), yi1=cy+r*Math.sin(end); let xi2=cx+r*Math.cos(startAngle), yi2=cy+r*Math.sin(startAngle); let path = document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',`M${x1},${y1}A${R},${R},0,${large},1,${x2},${y2}L${xi1},${yi1}A${r},${r},0,${large},0,${xi2},${yi2}Z`); path.setAttribute('fill', techColors[cat]||'#aaa'); path.setAttribute('opacity', (activeTech && activeTech !== cat) ? '0.3' : '1'); path.style.cursor='pointer'; path.addEventListener('click',()=>filterByTech(cat)); svg.appendChild(path); let mid = startAngle+angle/2; if(angle > 0.3){ let lx=cx+(R-11)*Math.cos(mid), ly=cy+(R-11)*Math.sin(mid); let txt=document.createElementNS('http://www.w3.org/2000/svg','text'); txt.setAttribute('x',lx);txt.setAttribute('y',ly); txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','middle'); txt.setAttribute('font-size','7');txt.setAttribute('fill','white');txt.setAttribute('font-weight','bold'); txt.textContent=Math.round(counts[cat]/total*100)+'%'; svg.appendChild(txt); } startAngle=end; let div=document.createElement('div'); div.className=`legend-item ${activeTech===cat?'active':''}${activeTech && activeTech!==cat?' dimmed':''}`; div.innerHTML=`<div class="legend-dot" style="background:${techColors[cat]||'#aaa'}"></div><span class="legend-label">${cat}</span><span class="legend-count">${counts[cat]}</span>`; div.addEventListener('click',()=>filterByTech(cat)); legend.appendChild(div); }); let centerTotal=document.createElementNS('http://www.w3.org/2000/svg','text'); centerTotal.setAttribute('x',cx);centerTotal.setAttribute('y',cy-4); centerTotal.setAttribute('text-anchor','middle');centerTotal.setAttribute('font-size','12'); centerTotal.setAttribute('font-weight','bold');centerTotal.setAttribute('fill','#1e293b'); centerTotal.textContent=total; svg.appendChild(centerTotal); let sub=document.createElementNS('http://www.w3.org/2000/svg','text'); sub.setAttribute('x',cx);sub.setAttribute('y',cy+9);sub.setAttribute('text-anchor','middle'); sub.setAttribute('font-size','7');sub.setAttribute('fill','#64748b'); sub.textContent='menara'; svg.appendChild(sub); }
+        function applyMarkerFilter() { layer_Menara_Telekomunikasi_PKU_4.eachLayer(lyr => { let p = lyr.feature.properties; let show = matchKec(p) && matchTech(p); let el = lyr.getElement?.(); if(!el) return; if(!show){ el.style.opacity='0.1'; el.style.filter='grayscale(1)'; } else { el.style.opacity='1'; if(activeKecamatan && !activeTech) el.style.filter='hue-rotate(155deg) saturate(5) brightness(1.2)'; else if(activeTech && !activeKecamatan){ let hueMap={'5G saja':'200deg','4G & 5G':'270deg','4G saja':'120deg','Lainnya':'0deg'}; el.style.filter=`hue-rotate(${hueMap[getTechCategory(p)]||'0deg'}) saturate(4) brightness(1.1)`; } else if(activeKecamatan && activeTech) el.style.filter='hue-rotate(155deg) saturate(6) brightness(1.3)'; else el.style.filter='none'; } }); }
+
+        function getPopulationByKec(namaKec) {
+            var result = null;
+            layer_ADMINISTRASI_AR_KECAMATAN_1.eachLayer(function(lyr) {
+                var p = lyr.feature.properties;
+                if (p['WADMKC'] && p['WADMKC'].toUpperCase() === namaKec.toUpperCase()) {
+                    var raw = p['Jumlah Penduduk PKU_Jumlah Penduduk (Jiwa)'];
+                    result = (raw !== null && raw !== undefined && raw !== '') ? Number(raw) : null;
+                }
+            });
+            return result;
+        }
+
+        function updatePopPanel(namaKec, jumlah) {
+            if (namaKec) {
+                document.getElementById('pop-value').textContent = (jumlah !== null && !isNaN(jumlah))
+                    ? jumlah.toLocaleString('id-ID') + ' Jiwa' : 'N/A';
+                document.getElementById('pop-kec').textContent = '(Kec. ' + namaKec + ')';
+            } else {
+                document.getElementById('pop-value').textContent = '-';
+                document.getElementById('pop-kec').textContent = 'Klik kecamatan';
+            }
+        }
+        
+        function filterByKecamatan(nama) {
+            activeKecamatan = (activeKecamatan && activeKecamatan.toUpperCase() === nama.toUpperCase()) ? null : nama;
+            updatePopPanel(activeKecamatan, activeKecamatan ? getPopulationByKec(activeKecamatan) : null);
+            refreshDashboard(); applyMarkerFilter(); updateFilterBar();
+        }
+
+        function filterByTech(cat) { activeTech = (activeTech === cat) ? null : cat; refreshDashboard(); applyMarkerFilter(); updateFilterBar(); }
+
+        function resetAllFilters() {
+            activeKecamatan = null; activeTech = null;
+            layer_Menara_Telekomunikasi_PKU_4.eachLayer(lyr=>{ let el=lyr.getElement?.(); if(el){el.style.opacity='1'; el.style.filter='none';} });
+            updatePopPanel(null, null);
+            refreshDashboard(); updateFilterBar();
+        }
+
+        function updateFilterBar(){ let bar=document.getElementById('active-filter-bar'),txt=document.getElementById('active-filter-text'); let parts=[]; if(activeKecamatan) parts.push(`Kec: <strong>${activeKecamatan}</strong>`); if(activeTech) parts.push(`Tech: <strong>${activeTech}</strong>`); if(parts.length){ bar.classList.add('visible'); txt.innerHTML=parts.join(' &nbsp;|&nbsp; '); } else bar.classList.remove('visible'); }
+        function refreshDashboard(){ renderKecTable(); renderDonut(); }
+
+        map.whenReady(function() {
+            setTimeout(function() {
+                map.invalidateSize();
+                refreshDashboard();
+            }, 400);
+        });
+
+        map.on('zoomend',()=>{ if(activeKecamatan||activeTech) setTimeout(applyMarkerFilter, 300); });
+        window.resetAllFilters = resetAllFilters;
+        window.toggleSort = toggleSort;
+        </script>        
+    </body>
+</html>
